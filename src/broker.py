@@ -75,7 +75,10 @@ class Broker:
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
         """Subscribe to topic by client in address."""
-        self.topics[topic][0] += [(address, _format)]
+        if topic not in self.topics:
+            self.topics[topic] = ([(address, _format)], "")
+            return
+        self.topics[topic][0].append((address, _format))
 
     def unsubscribe(self, topic: str, address: socket.socket):
         """Unsubscribe to topic by client in address."""
