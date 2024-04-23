@@ -61,12 +61,17 @@ class Broker:
         """Returns a list of strings containing all topics containing values."""
         return list(self.topics.keys())
 
-    def get_topic(self, topic) -> str:
+    def get_topic(self, topic) -> Union[str, None]:
         """Returns the currently stored value in topic."""
+        if topic not in self.topics:
+            return None
         return self.topics[topic][1]
 
     def put_topic(self, topic: str, value: str):
         """Store in topic the value."""
+        if topic not in self.topics:
+            self.topics[topic] = ([], value)
+            return
         self.topics[topic] = self.topics[topic][0], value
 
     def list_subscriptions(self, topic: str) -> List[Tuple[socket.socket, Serializer]]:
