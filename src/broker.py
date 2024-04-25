@@ -1,8 +1,9 @@
 """Message Broker"""
 
 import enum
+import selectors
 import socket
-from typing import Dict, List, Any, Tuple, Literal, Union
+from typing import List, Tuple, Union
 
 
 class Serializer(enum.Enum):
@@ -25,6 +26,14 @@ class Broker:
         self.canceled = False
         self._host = "localhost"
         self._port = 5000
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((self._host, self._port))
+        self.socket.listen(100)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        self.sel = selectors.DefaultSelector()
+        self.sel.register(self.socket, selectors.EVENT_READ, self.accept)
 
         """
         {
@@ -57,6 +66,14 @@ class Broker:
         }
         """
         self.topics: dict[str, topic_type] = {}
+
+    def accept(self, sock: socket.socket):
+        conn, _ = sock.accept()
+        conn.setblocking(False)
+        self.sel.register(conn, selectors.EVENT_READ, self.read)
+
+    def read(self, conn: socket.socket):
+        pass
 
     def list_topics(self) -> List[str]:
         """Returns a list of strings containing all topics containing values."""
@@ -97,4 +114,7 @@ class Broker:
         """Run until canceled."""
 
         while not self.canceled:
-            pass
+            events = self.sel.select()
+            for key, _ in events:
+                callback = key.data
+                callback(key.fileobj)
