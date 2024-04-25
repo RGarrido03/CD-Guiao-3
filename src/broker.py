@@ -1,4 +1,5 @@
 """Message Broker"""
+
 import enum
 import socket
 from typing import Dict, List, Any, Tuple, Literal, Union
@@ -87,7 +88,10 @@ class Broker:
 
     def unsubscribe(self, topic: str, address: socket.socket):
         """Unsubscribe to topic by client in address."""
-        self.topics[topic] = ([client for client in self.topics[topic][0] if client[0] != address], self.topics[topic][1])
+        self.topics[topic] = (
+            [client for client in self.topics[topic][0] if client[0] != address],
+            self.topics[topic][1],
+        )
 
     def run(self):
         """Run until canceled."""
