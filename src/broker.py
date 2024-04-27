@@ -1,18 +1,10 @@
 """Message Broker"""
 
-import enum
 import selectors
 import socket
 from typing import List, Tuple, Union
 
-
-class Serializer(enum.Enum):
-    """Possible message serializers."""
-
-    JSON = 0
-    XML = 1
-    PICKLE = 2
-
+from src.consts import Serializer
 
 subscriber_type = tuple[socket.socket, Serializer]
 topic_type = tuple[list[subscriber_type], str]
