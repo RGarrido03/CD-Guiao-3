@@ -2,8 +2,11 @@ import json
 import pickle
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from enum import IntEnum
 from socket import socket
 from typing import Union
+
+from src.consts import MiddlewareType
 
 
 class JsonUtils:
@@ -46,7 +49,10 @@ class Message:
         self.command = command
 
     def to_dict(self) -> dict[str, str]:
-        return self.__dict__
+        return {
+            k: (v.value if isinstance(v, IntEnum) else v)
+            for k, v in self.__dict__.items()
+        }
 
     def __str__(self):
         return str(self.to_dict())
@@ -55,37 +61,37 @@ class Message:
 class JoinTopic(Message):
     """Message to join a chat topic."""
 
-    def __init__(self, command: str, _type: str, topic: str):
-        super().__init__(command)
+    def __init__(self, _type: MiddlewareType, topic: str):
+        super().__init__("join_topic")
         self.type = _type
         self.topic = topic
 
 
 class TopicList(Message):
-    def __init__(self, command: str, _type: str):
-        super().__init__(command)
+    def __init__(self, _type: MiddlewareType):
+        super().__init__("topic_list")
         self.type = _type
 
 
 class TopicListSuccess(Message):
-    def __init__(self, command: str, topics: list[str]):
-        super().__init__(command)
+    def __init__(self, topics: list[str]):
+        super().__init__("topic_list_success")
         self.topics = topics
 
 
 class SendMessage(Message):
     """Message to chat with other clients."""
 
-    def __init__(self, command: str, _type: str, topic: str, message: str):
-        super().__init__(command)
+    def __init__(self, _type: MiddlewareType, topic: str, message: str):
+        super().__init__("send_message")
         self.type = _type
         self.topic = topic
         self.message = message
 
 
 class LeaveTopic(Message):
-    def __init__(self, command: str, _type: str, topic: str):
-        super().__init__(command)
+    def __init__(self, _type: MiddlewareType, topic: str):
+        super().__init__("leave_topic")
         self.type = _type
         self.topic = topic
 
@@ -93,24 +99,24 @@ class LeaveTopic(Message):
 class JoinMessage(Message):
     """Message to join a chat channel."""
 
-    def __init__(self, command: str, channel: str):
-        super().__init__(command)
+    def __init__(self, channel: str):
+        super().__init__("join")
         self.channel = channel
 
 
 class RegisterMessage(Message):
     """Message to register username in the server."""
 
-    def __init__(self, command: str, username: str):
-        super().__init__(command)
+    def __init__(self, username: str):
+        super().__init__("register")
         self.username = username
 
 
 class TextMessage(Message):
     """Message to chat with other clients."""
 
-    def __init__(self, command: str, message: str, channel: str = None, ts: int = None):
-        super().__init__(command)
+    def __init__(self, message: str, ts: int, channel: str = None):
+        super().__init__("message")
         self.message = message
         self.channel = channel
         self.ts = ts
@@ -123,50 +129,52 @@ class CDProto:
     """Computação Distribuida Protocol."""
 
     @classmethod
-    def join_topic(cls, _type: str, topic: str) -> JoinTopic:
+    def join_topic(cls, _type: MiddlewareType, topic: str) -> JoinTopic:
         """Creates a JoinTopic object."""
-        return JoinTopic("join_topic", _type, topic)
+        return JoinTopic(_type, topic)
 
     @classmethod
-    def send_message(cls, _type: str, topic: str, message: str) -> SendMessage:
+    def send_message(
+        cls, _type: MiddlewareType, topic: str, message: str
+    ) -> SendMessage:
         """Creates a SendMessage object."""
-        return SendMessage("send_message", _type, topic, message)
+        return SendMessage(_type, topic, message)
 
     @classmethod
     def topic_list(
-        cls, _type: str, _list: list[str] = None
+        cls, _type: MiddlewareType, _list: list[str] = None
     ) -> Union[TopicList, TopicListSuccess]:
         """Creates a TopicListMessage object."""
         if _list:
-            return TopicListSuccess("topic_list_success", _list)
-        return TopicList("topic_list", _type)
+            return TopicListSuccess(_list)
+        return TopicList(_type)
 
     @classmethod
-    def leave_topic(cls, _type: str, topic: str) -> LeaveTopic:
+    def leave_topic(cls, _type: MiddlewareType, topic: str) -> LeaveTopic:
         """Creates a LeaveTopic object."""
-        return LeaveTopic("leave_topic", _type, topic)
+        return LeaveTopic(_type, topic)
 
     @classmethod
     def register(cls, username: str) -> RegisterMessage:
         """Creates a RegisterMessage object."""
-        return RegisterMessage("register", username)
+        return RegisterMessage(username)
 
     @classmethod
     def join(cls, channel: str) -> JoinMessage:
         """Creates a JoinMessage object."""
-        return JoinMessage("join", channel)
+        return JoinMessage(channel)
 
     @classmethod
     def message(cls, message: str, channel: str = None) -> TextMessage:
         """Creates a TextMessage object."""
-        return TextMessage("message", message, channel, int(datetime.now().timestamp()))
+        return TextMessage(message, int(datetime.now().timestamp()), channel)
 
     @classmethod
     def send_msg(
         cls,
         connection: socket,
         command: str,
-        _type: str = "",
+        _type: MiddlewareType = None,
         topic: str = "",
         message: str = None,
     ) -> None:
