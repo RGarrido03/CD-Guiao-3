@@ -23,6 +23,7 @@ class Queue:
         self.topic = topic
         self.type = _type
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect(("localhost", 5000))
 
         if self.type == MiddlewareType.CONSUMER:
             submsg = CDProto.join_topic(self.type, self.topic)
