@@ -4,8 +4,8 @@ import socket
 from collections.abc import Callable
 from typing import Any, Tuple
 
-from src.consts import MiddlewareType
-from src.utils import CDProto
+from src.consts import MiddlewareType, Serializer, Command
+from src.protocol import CDProto
 
 
 class Queue:
@@ -38,7 +38,7 @@ class Queue:
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
         CDProto.send_msg(self.sock, CDProto.list_topics())  # ainda falta implementar
-        callback
+        callback()
 
     def cancel(self):
         """Cancel subscription."""
@@ -52,11 +52,13 @@ class JSONQueue(Queue):
 
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        self.ser_type = "JSONQueue"
+        self.serialization = Serializer.JSON
 
     def push(self, value):
         """Sends data to broker."""
-        CDProto.send_msg(self.sock, "publish", self.ser_type, self.topic, value)
+        CDProto.send_msg(
+            self.sock, Command.PUBLISH, self.serialization, self.topic, value
+        )
 
     def pull(self) -> Tuple[str, Any]:
         """Receives (topic, data) from broker. Should BLOCK the consumer!"""
@@ -70,12 +72,12 @@ class JSONQueue(Queue):
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        CDProto.send_msg(self.sock, "listTopics", self.ser_type, self.topic)
-        callback
+        CDProto.send_msg(self.sock, Command.LIST_TOPICS, self.serialization, self.topic)
+        callback()
 
     def cancel(self):
         """Cancel subscription."""
-        CDProto.send_msg(self.sock, "unsubscribe", self.ser_type, self.topic)
+        CDProto.send_msg(self.sock, Command.UNSUBSCRIBE, self.serialization, self.topic)
 
 
 class XMLQueue(Queue):
@@ -83,11 +85,13 @@ class XMLQueue(Queue):
 
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        self.ser_type = "XMLQueue"
+        self.serialization = Serializer.XML
 
     def push(self, value):
         """Sends data to broker."""
-        CDProto.send_msg(self.sock, "publish", self.ser_type, self.topic, value)
+        CDProto.send_msg(
+            self.sock, Command.PUBLISH, self.serialization, self.topic, value
+        )
 
     def pull(self) -> Tuple[str, Any]:
         """Receives (topic, data) from broker. Should BLOCK the consumer!"""
@@ -101,12 +105,12 @@ class XMLQueue(Queue):
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        CDProto.send_msg(self.sock, "listTopics", self.ser_type, self.topic)
-        callback
+        CDProto.send_msg(self.sock, Command.LIST_TOPICS, self.serialization, self.topic)
+        callback()
 
     def cancel(self):
         """Cancel subscription."""
-        CDProto.send_msg(self.sock, "unsubscribe", self.ser_type, self.topic)
+        CDProto.send_msg(self.sock, Command.UNSUBSCRIBE, self.serialization, self.topic)
 
 
 class PickleQueue(Queue):
@@ -114,11 +118,13 @@ class PickleQueue(Queue):
 
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
-        self.ser_type = "PickleQueue"
+        self.serialization = Serializer.PICKLE
 
     def push(self, value):
         """Sends data to broker."""
-        CDProto.send_msg(self.sock, "publish", self.ser_type, self.topic, value)
+        CDProto.send_msg(
+            self.sock, Command.PUBLISH, self.serialization, self.topic, value
+        )
 
     def pull(self) -> Tuple[str, Any]:
         """Receives (topic, data) from broker. Should BLOCK the consumer!"""
@@ -132,9 +138,9 @@ class PickleQueue(Queue):
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        CDProto.send_msg(self.sock, "listTopics", self.ser_type, self.topic)
-        callback
+        CDProto.send_msg(self.sock, Command.LIST_TOPICS, self.serialization, self.topic)
+        callback()
 
     def cancel(self):
         """Cancel subscription."""
-        CDProto.send_msg(self.sock, "unsubscribe", self.ser_type, self.topic)
+        CDProto.send_msg(self.sock, Command.UNSUBSCRIBE, self.serialization, self.topic)

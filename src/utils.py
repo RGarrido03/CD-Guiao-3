@@ -1,6 +1,9 @@
 import json
 import pickle
 import xml.etree.ElementTree as ET
+from typing import Type, Union
+
+from src.consts import Serializer
 
 
 class JsonUtils:
@@ -34,3 +37,10 @@ class PickleUtils:
     @classmethod
     def decode(cls, message: bytes) -> dict:
         return pickle.loads(message)
+
+
+encoder_map: dict[Serializer, Type[Union[JsonUtils, XmlUtils, PickleUtils]]] = {
+    Serializer.JSON: JsonUtils,
+    Serializer.XML: XmlUtils,
+    Serializer.PICKLE: PickleUtils,
+}
