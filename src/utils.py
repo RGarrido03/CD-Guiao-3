@@ -1,10 +1,12 @@
 import json
+import pickle
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from socket import socket
-import xml.etree.ElementTree as ET
+from typing import Union
 
 
-class JSONUtils:
+class JsonUtils:
     @classmethod
     def encode(cls, message: dict) -> bytes:
         return json.dumps(message).encode("utf-8")
@@ -12,6 +14,26 @@ class JSONUtils:
     @classmethod
     def decode(cls, message: bytes) -> dict:
         return json.loads(message.decode("utf-8"))
+
+
+class XmlUtils:
+    @classmethod
+    def encode(cls, message: dict) -> bytes:
+        return ET.tostring(ET.Element("message", message))
+
+    @classmethod
+    def decode(cls, message: bytes) -> dict:
+        return ET.XML(message.decode("utf-8")).attrib
+
+
+class PickleUtils:
+    @classmethod
+    def encode(cls, message: dict) -> bytes:
+        return pickle.dumps(message)
+
+    @classmethod
+    def decode(cls, message: bytes) -> dict:
+        return pickle.loads(message)
 
 
 class Message:
@@ -200,12 +222,9 @@ class CDProto:
                 raise ValueError(f"Unsupported command: {command}")
 
             if _type in ["JSONQueue", "Serializer.JSON"]:
-                msg = json.dumps(msg.dict()).encode("utf-8")
+                msg = JsonUtils.encode(msg.dict())
             elif _type in ["XMLQueue", "Serializer.XML"]:
-                msg_dict = msg.dict()
-                for key in msg_dict:
-                    msg_dict[key] = str(msg_dict[key])
-                msg = ET.tostring(ET.Element("message", msg_dict))
+                msg = XmlUtils.encode(msg.dict())
             else:
                 raise ValueError(f"Unsupported serialization type: {_type}")
 
@@ -223,9 +242,8 @@ class CDProto:
             if h == 0:
                 return None
 
-            message = connection.recv(h).decode("utf-8")
-
-            dictionary = json.loads(message)
+            message = connection.recv(h)
+            dictionary = JsonUtils.decode(message)
 
             if dictionary["command"] == "register":
                 userName = dictionary["user"]
