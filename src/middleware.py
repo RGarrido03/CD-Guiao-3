@@ -3,7 +3,7 @@ from collections.abc import Callable
 from enum import Enum
 from queue import LifoQueue, Empty
 from typing import Any, Tuple
-import selectors, sys, socket
+import socket
 
 from src.utils import CDProto
 
@@ -22,37 +22,33 @@ class Queue:
         """Create Queue."""
         self.topic = topic
         self.type = _type
-        self.sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         if self.type == MiddlewareType.CONSUMER:
-            submsg = CDProto.subscribe(self.type, self.topic)
+            submsg = CDProto.join_topic(self.type, self.topic)
             CDProto.send_msg(self.sock, submsg)
-
 
     def push(self, value):
         """Sends data to broker."""
 
-
     def pull(self) -> Tuple[str, Any]:
         """Receives (topic, data) from broker. Should BLOCK the consumer!"""
         msg = CDProto.recv_msg(self.sock)
-        if msg: # pub
+        if msg:  # pub
             return msg
-        #elif: # list topcs
-         #   pass
-            # invocar callback
-        #else:
-
+        # elif: # list topcs
+        #   pass
+        # invocar callback
+        # else:
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        CDProto.send_msg(self.sock, CDProto.list_topics())
+        CDProto.send_msg(self.sock, CDProto.list_topics()) # ainda falta implementar
         callback
-
 
     def cancel(self):
         """Cancel subscription."""
-        CDProto.send_msg(self.sock, CDProto.cancel(self.topic))
+        CDProto.send_msg(self.sock, CDProto.cancel(self.topic)) # também falta implementar
 
 
 class JSONQueue(Queue):
@@ -72,16 +68,14 @@ class JSONQueue(Queue):
         if msg.command == "publish":
             return msg
         elif msg.command == "listTopics":
-            #invocar callback
+            # invocar callback
             pass
-        #else:
-
+        # else:
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
         CDProto.send_msg(self.sock, "listTopics", self.ser_type, self.topic)
         callback
-
 
     def cancel(self):
         """Cancel subscription."""
@@ -90,6 +84,7 @@ class JSONQueue(Queue):
 
 class XMLQueue(Queue):
     """Queue implementation with XML based serialization."""
+
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
         self.ser_type = "XMLQueue"
@@ -104,16 +99,14 @@ class XMLQueue(Queue):
         if msg.command == "publish":
             return msg
         elif msg.command == "listTopics":
-            #invocar callback
+            # invocar callback
             pass
-        #else:
-
+        # else:
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
         CDProto.send_msg(self.sock, "listTopics", self.ser_type, self.topic)
         callback
-
 
     def cancel(self):
         """Cancel subscription."""
@@ -122,6 +115,7 @@ class XMLQueue(Queue):
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
+
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
         self.ser_type = "PickleQueue"
@@ -136,16 +130,14 @@ class PickleQueue(Queue):
         if msg.command == "publish":
             return msg
         elif msg.command == "listTopics":
-            #invocar callback
+            # invocar callback
             pass
-        #else:
-
+        # else:
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
         CDProto.send_msg(self.sock, "listTopics", self.ser_type, self.topic)
         callback
-
 
     def cancel(self):
         """Cancel subscription."""
