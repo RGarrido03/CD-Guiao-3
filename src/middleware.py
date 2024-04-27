@@ -1,9 +1,9 @@
 """Middleware to communicate with PubSub Message Broker."""
+
+import socket
 from collections.abc import Callable
 from enum import Enum
-from queue import LifoQueue, Empty
 from typing import Any, Tuple
-import socket
 
 from src.utils import CDProto
 
@@ -43,12 +43,14 @@ class Queue:
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        CDProto.send_msg(self.sock, CDProto.list_topics()) # ainda falta implementar
+        CDProto.send_msg(self.sock, CDProto.list_topics())  # ainda falta implementar
         callback
 
     def cancel(self):
         """Cancel subscription."""
-        CDProto.send_msg(self.sock, CDProto.cancel(self.topic)) # também falta implementar
+        CDProto.send_msg(
+            self.sock, CDProto.cancel(self.topic)
+        )  # também falta implementar
 
 
 class JSONQueue(Queue):

@@ -16,19 +16,25 @@ class JSONUtils:
 
 class Message:
     """Message Type."""
+
     def __init__(self, command):
         self.command = command
 
 
 class JoinTopic(Message):
     """Message to join a chat topic."""
+
     def __init__(self, command, type, topic):
         super().__init__(command)
         self.topic = topic
         self.type = type
 
     def to_dict(self):
-        return {"command": self.command, "type": self.type.__str__(), "topic": self.topic}
+        return {
+            "command": self.command,
+            "type": self.type.__str__(),
+            "topic": self.topic,
+        }
 
     def to_string(self):
         return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topic": "{self.topic}"}}'
@@ -52,7 +58,11 @@ class TopicListSuccess(Message):
         self.topics = topics
 
     def dict(self):
-        return {"command": self.command, "type": self.type.__str__(), "topics": self.topics}
+        return {
+            "command": self.command,
+            "type": self.type.__str__(),
+            "topics": self.topics,
+        }
 
     def __str__(self):
         return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topics": "{self.topics}"}}'
@@ -60,6 +70,7 @@ class TopicListSuccess(Message):
 
 class SendMessage(Message):
     """Message to chat with other clients."""
+
     def __init__(self, command, type, topic, message):
         super().__init__(command)
         self.topic = topic
@@ -67,7 +78,12 @@ class SendMessage(Message):
         self.type = type
 
     def dict(self):
-        return {"command": self.command, "type": self.type.__str__(), "topic": self.topic, "message": self.message}
+        return {
+            "command": self.command,
+            "type": self.type.__str__(),
+            "topic": self.topic,
+            "message": self.message,
+        }
 
     def __str__(self):
         return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topic": "{self.topic}", "message": "{self.message}"}}'
@@ -80,7 +96,11 @@ class LeaveTopic(Message):
         self.type = type
 
     def dict(self):
-        return {"command": self.command, "type": self.type.__str__(), "topic": self.topic}
+        return {
+            "command": self.command,
+            "type": self.type.__str__(),
+            "topic": self.topic,
+        }
 
     def __str__(self):
         return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topic": "{self.topic}"}}'
@@ -88,6 +108,7 @@ class LeaveTopic(Message):
 
 class JoinMessage(Message):
     """Message to join a chat channel."""
+
     def __init__(self, command, channel):
         super().__init__(command)
         self.channel = channel
@@ -98,6 +119,7 @@ class JoinMessage(Message):
 
 class RegisterMessage(Message):
     """Message to register username in the server."""
+
     def __init__(self, command, username):
         super().__init__(command)
         self.username = username
@@ -108,6 +130,7 @@ class RegisterMessage(Message):
 
 class TextMessage(Message):
     """Message to chat with other clients."""
+
     def __init__(self, command, message, channel=None, ts=None):
         super().__init__(command)
         self.message = message
@@ -123,6 +146,7 @@ class TextMessage(Message):
 
 class CDProto:
     """Computação Distribuida Protocol."""
+
     @classmethod
     def join_topic(self, type, topic) -> JoinTopic:
         """Creates a JoinTopic object."""
@@ -144,7 +168,6 @@ class CDProto:
     def leave_topic(self, type, topic) -> LeaveTopic:
         """Creates a LeaveTopic object."""
         return LeaveTopic("leave_topic", type, topic)
-
 
     @classmethod
     def register(cls, username: str) -> RegisterMessage:
@@ -177,7 +200,7 @@ class CDProto:
                 raise ValueError(f"Unsupported command: {command}")
 
             if _type in ["JSONQueue", "Serializer.JSON"]:
-                msg = json.dumps(msg.dict()).encode('utf-8')
+                msg = json.dumps(msg.dict()).encode("utf-8")
             elif _type in ["XMLQueue", "Serializer.XML"]:
                 msg_dict = msg.dict()
                 for key in msg_dict:
@@ -196,11 +219,11 @@ class CDProto:
         """Receives through a connection a Message object."""
         try:
             # Receive the message length header
-            h = int.from_bytes(connection.recv(2), 'big')
+            h = int.from_bytes(connection.recv(2), "big")
             if h == 0:
                 return None
 
-            message = connection.recv(h).decode('utf-8')
+            message = connection.recv(h).decode("utf-8")
 
             dictionary = json.loads(message)
 
