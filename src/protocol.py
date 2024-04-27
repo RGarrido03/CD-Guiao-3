@@ -142,7 +142,7 @@ class CDProto:
     ) -> None:
         """Sends a message to the broker based on the command type."""
         try:
-            if command == Command.SUBSCRIBE:
+            if command == Command.JOIN_TOPIC:
                 msg = cls.join_topic(_type, topic)
             elif command == Command.PUBLISH:
                 msg = cls.send_message(_type, topic, message)
