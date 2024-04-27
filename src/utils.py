@@ -39,35 +39,35 @@ class PickleUtils:
 class Message:
     """Message Type."""
 
-    def __init__(self, command):
+    def __init__(self, command: str):
         self.command = command
 
 
 class JoinTopic(Message):
     """Message to join a chat topic."""
 
-    def __init__(self, command, type, topic):
+    def __init__(self, command: str, _type: str, topic: str):
         super().__init__(command)
         self.topic = topic
-        self.type = type
+        self.type = _type
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, str]:
         return {
             "command": self.command,
             "type": self.type.__str__(),
             "topic": self.topic,
         }
 
-    def to_string(self):
+    def to_string(self) -> str:
         return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topic": "{self.topic}"}}'
 
 
 class TopicList(Message):
-    def __init__(self, command, type):
+    def __init__(self, command: str, _type: str):
         super().__init__(command)
-        self.type = type
+        self.type = _type
 
-    def dict(self):
+    def dict(self) -> dict[str, str]:
         return {"command": self.command, "type": self.type.__str__()}
 
     def __str__(self):
@@ -75,11 +75,11 @@ class TopicList(Message):
 
 
 class TopicListSuccess(Message):
-    def __init__(self, command, topics):
+    def __init__(self, command: str, topics: list[str]):
         super().__init__(command)
         self.topics = topics
 
-    def dict(self):
+    def dict(self) -> dict[str, str]:
         return {
             "command": self.command,
             "type": self.type.__str__(),
@@ -93,13 +93,13 @@ class TopicListSuccess(Message):
 class SendMessage(Message):
     """Message to chat with other clients."""
 
-    def __init__(self, command, type, topic, message):
+    def __init__(self, command: str, _type: str, topic: str, message: str):
         super().__init__(command)
         self.topic = topic
         self.message = message
-        self.type = type
+        self.type = _type
 
-    def dict(self):
+    def dict(self) -> dict[str, str]:
         return {
             "command": self.command,
             "type": self.type.__str__(),
@@ -112,12 +112,12 @@ class SendMessage(Message):
 
 
 class LeaveTopic(Message):
-    def __init__(self, command, type, topic):
+    def __init__(self, command: str, _type: str, topic: str):
         super().__init__(command)
         self.topic = topic
-        self.type = type
+        self.type = _type
 
-    def dict(self):
+    def dict(self) -> dict[str, str]:
         return {
             "command": self.command,
             "type": self.type.__str__(),
@@ -131,7 +131,7 @@ class LeaveTopic(Message):
 class JoinMessage(Message):
     """Message to join a chat channel."""
 
-    def __init__(self, command, channel):
+    def __init__(self, command: str, channel: str):
         super().__init__(command)
         self.channel = channel
 
@@ -142,7 +142,7 @@ class JoinMessage(Message):
 class RegisterMessage(Message):
     """Message to register username in the server."""
 
-    def __init__(self, command, username):
+    def __init__(self, command: str, username: str):
         super().__init__(command)
         self.username = username
 
@@ -153,7 +153,7 @@ class RegisterMessage(Message):
 class TextMessage(Message):
     """Message to chat with other clients."""
 
-    def __init__(self, command, message, channel=None, ts=None):
+    def __init__(self, command: str, message: str, channel: str = None, ts: int = None):
         super().__init__(command)
         self.message = message
         self.channel = channel
@@ -170,26 +170,28 @@ class CDProto:
     """Computação Distribuida Protocol."""
 
     @classmethod
-    def join_topic(self, type, topic) -> JoinTopic:
+    def join_topic(cls, _type: str, topic: str) -> JoinTopic:
         """Creates a JoinTopic object."""
-        return JoinTopic("join_topic", type, topic)
+        return JoinTopic("join_topic", _type, topic)
 
     @classmethod
-    def send_message(self, type, topic, message) -> SendMessage:
+    def send_message(cls, _type: str, topic: str, message: str) -> SendMessage:
         """Creates a SendMessage object."""
-        return SendMessage("send_message", type, topic, message)
+        return SendMessage("send_message", _type, topic, message)
 
     @classmethod
-    def topic_list(self, type, list=None) -> TopicList:
+    def topic_list(
+        cls, _type: str, _list: list[str] = None
+    ) -> Union[TopicList, TopicListSuccess]:
         """Creates a TopicListMessage object."""
-        if list:
-            return TopicListSuccess("topic_list_success", list)
-        return TopicList("topic_list", type)
+        if _list:
+            return TopicListSuccess("topic_list_success", _list)
+        return TopicList("topic_list", _type)
 
     @classmethod
-    def leave_topic(self, type, topic) -> LeaveTopic:
+    def leave_topic(cls, _type: str, topic: str) -> LeaveTopic:
         """Creates a LeaveTopic object."""
-        return LeaveTopic("leave_topic", type, topic)
+        return LeaveTopic("leave_topic", _type, topic)
 
     @classmethod
     def register(cls, username: str) -> RegisterMessage:
@@ -207,7 +209,14 @@ class CDProto:
         return TextMessage("message", message, channel, int(datetime.now().timestamp()))
 
     @classmethod
-    def send_msg(cls, connection: socket, command, _type="", topic="", message=None):
+    def send_msg(
+        cls,
+        connection: socket,
+        command: str,
+        _type: str = "",
+        topic: str = "",
+        message: str = None,
+    ) -> None:
         """Sends a message to the broker based on the command type."""
         try:
             if command == "subscribe":
@@ -234,7 +243,7 @@ class CDProto:
             raise CDProtoBadFormat(f"Error sending message: {e}")
 
     @classmethod
-    def recv_msg(cls, connection: socket) -> Message:
+    def recv_msg(cls, connection: socket) -> Union[Message, None]:
         """Receives through a connection a Message object."""
         try:
             # Receive the message length header
@@ -246,8 +255,8 @@ class CDProto:
             dictionary = JsonUtils.decode(message)
 
             if dictionary["command"] == "register":
-                userName = dictionary["user"]
-                return CDProto.register(userName)
+                user_name = dictionary["user"]
+                return CDProto.register(user_name)
             elif dictionary["command"] == "join":
                 channel = dictionary["channel"]
                 return CDProto.join(channel)
