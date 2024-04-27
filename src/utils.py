@@ -19,6 +19,9 @@ class JsonUtils:
 class XmlUtils:
     @classmethod
     def encode(cls, message: dict) -> bytes:
+        for key in message:
+            message[key] = str(message[key])
+
         return ET.tostring(ET.Element("message", message))
 
     @classmethod
