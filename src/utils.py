@@ -45,24 +45,20 @@ class Message:
     def __init__(self, command: str):
         self.command = command
 
+    def to_dict(self) -> dict[str, str]:
+        return self.__dict__
+
+    def __str__(self):
+        return str(self.to_dict())
+
 
 class JoinTopic(Message):
     """Message to join a chat topic."""
 
     def __init__(self, command: str, _type: str, topic: str):
         super().__init__(command)
-        self.topic = topic
         self.type = _type
-
-    def to_dict(self) -> dict[str, str]:
-        return {
-            "command": self.command,
-            "type": self.type.__str__(),
-            "topic": self.topic,
-        }
-
-    def to_string(self) -> str:
-        return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topic": "{self.topic}"}}'
+        self.topic = topic
 
 
 class TopicList(Message):
@@ -70,27 +66,11 @@ class TopicList(Message):
         super().__init__(command)
         self.type = _type
 
-    def dict(self) -> dict[str, str]:
-        return {"command": self.command, "type": self.type.__str__()}
-
-    def __str__(self):
-        return f'{{"command": "{self.command}", "type": "{self.type.__str__()}"}}'
-
 
 class TopicListSuccess(Message):
     def __init__(self, command: str, topics: list[str]):
         super().__init__(command)
         self.topics = topics
-
-    def dict(self) -> dict[str, str]:
-        return {
-            "command": self.command,
-            "type": self.type.__str__(),
-            "topics": self.topics,
-        }
-
-    def __str__(self):
-        return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topics": "{self.topics}"}}'
 
 
 class SendMessage(Message):
@@ -98,37 +78,16 @@ class SendMessage(Message):
 
     def __init__(self, command: str, _type: str, topic: str, message: str):
         super().__init__(command)
+        self.type = _type
         self.topic = topic
         self.message = message
-        self.type = _type
-
-    def dict(self) -> dict[str, str]:
-        return {
-            "command": self.command,
-            "type": self.type.__str__(),
-            "topic": self.topic,
-            "message": self.message,
-        }
-
-    def __str__(self):
-        return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topic": "{self.topic}", "message": "{self.message}"}}'
 
 
 class LeaveTopic(Message):
     def __init__(self, command: str, _type: str, topic: str):
         super().__init__(command)
-        self.topic = topic
         self.type = _type
-
-    def dict(self) -> dict[str, str]:
-        return {
-            "command": self.command,
-            "type": self.type.__str__(),
-            "topic": self.topic,
-        }
-
-    def __str__(self):
-        return f'{{"command": "{self.command}", "type": "{self.type.__str__()}", "topic": "{self.topic}"}}'
+        self.topic = topic
 
 
 class JoinMessage(Message):
@@ -138,9 +97,6 @@ class JoinMessage(Message):
         super().__init__(command)
         self.channel = channel
 
-    def __str__(self):
-        return f'{{"command": "{self.command}", "channel": "{self.channel}"}}'
-
 
 class RegisterMessage(Message):
     """Message to register username in the server."""
@@ -148,9 +104,6 @@ class RegisterMessage(Message):
     def __init__(self, command: str, username: str):
         super().__init__(command)
         self.username = username
-
-    def __str__(self):
-        return f'{{"command": "{self.command}", "user": "{self.username}"}}'
 
 
 class TextMessage(Message):
@@ -162,11 +115,8 @@ class TextMessage(Message):
         self.channel = channel
         self.ts = ts
 
-    def __str__(self):
-        if self.channel:
-            return f'{{"command": "{self.command}", "message": "{self.message}", "channel": "{self.channel}", "ts": {self.ts}}}'
-        else:
-            return f'{{"command": "{self.command}", "message": "{self.message}", "ts": {self.ts}}}'
+    def to_dict(self):
+        return {k: v for k, v in self.__dict__.items() if v is not None}
 
 
 class CDProto:
@@ -234,9 +184,11 @@ class CDProto:
                 raise ValueError(f"Unsupported command: {command}")
 
             if _type in ["JSONQueue", "Serializer.JSON"]:
-                msg = JsonUtils.encode(msg.dict())
+                msg = JsonUtils.encode(msg.to_dict())
             elif _type in ["XMLQueue", "Serializer.XML"]:
-                msg = XmlUtils.encode(msg.dict())
+                msg = XmlUtils.encode(msg.to_dict())
+            elif _type in ["PickleQueue", "Serializer.PICKLE"]:
+                msg = PickleUtils.encode(msg.to_dict())
             else:
                 raise ValueError(f"Unsupported serialization type: {_type}")
 
