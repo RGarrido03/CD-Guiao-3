@@ -2,17 +2,10 @@
 
 import socket
 from collections.abc import Callable
-from enum import Enum
 from typing import Any, Tuple
 
+from src.consts import MiddlewareType
 from src.utils import CDProto
-
-
-class MiddlewareType(Enum):
-    """Middleware Type."""
-
-    CONSUMER = 1
-    PRODUCER = 2
 
 
 class Queue:
