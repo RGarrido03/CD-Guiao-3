@@ -25,16 +25,14 @@ class Message:
 class JoinTopic(Message):
     """Message to join a chat topic."""
 
-    def __init__(self, _type: Serializer, topic: str):
+    def __init__(self, topic: str):
         super().__init__(Command.JOIN_TOPIC)
-        self.type = _type
         self.topic = topic
 
 
 class TopicList(Message):
-    def __init__(self, _type: Serializer):
+    def __init__(self):
         super().__init__(Command.TOPIC_LIST)
-        self.type = _type
 
 
 class TopicListSuccess(Message):
@@ -46,17 +44,15 @@ class TopicListSuccess(Message):
 class SendMessage(Message):
     """Message to chat with other clients."""
 
-    def __init__(self, _type: Serializer, topic: str, message: str):
+    def __init__(self, topic: str, message: str):
         super().__init__(Command.SEND_MESSAGE)
-        self.type = _type
         self.topic = topic
         self.message = message
 
 
 class LeaveTopic(Message):
-    def __init__(self, _type: Serializer, topic: str):
+    def __init__(self, topic: str):
         super().__init__(Command.LEAVE_TOPIC)
-        self.type = _type
         self.topic = topic
 
 
@@ -93,28 +89,26 @@ class CDProto:
     """Computação Distribuida Protocol."""
 
     @classmethod
-    def join_topic(cls, _type: Serializer, topic: str) -> JoinTopic:
+    def join_topic(cls, topic: str) -> JoinTopic:
         """Creates a JoinTopic object."""
-        return JoinTopic(_type, topic)
+        return JoinTopic(topic)
 
     @classmethod
-    def send_message(cls, _type: Serializer, topic: str, message: str) -> SendMessage:
+    def send_message(cls, topic: str, message: str) -> SendMessage:
         """Creates a SendMessage object."""
-        return SendMessage(_type, topic, message)
+        return SendMessage(topic, message)
 
     @classmethod
-    def topic_list(
-        cls, _type: Serializer, _list: list[str] = None
-    ) -> Union[TopicList, TopicListSuccess]:
+    def topic_list(cls, _list: list[str] = None) -> Union[TopicList, TopicListSuccess]:
         """Creates a TopicListMessage object."""
         if _list:
             return TopicListSuccess(_list)
-        return TopicList(_type)
+        return TopicList()
 
     @classmethod
-    def leave_topic(cls, _type: Serializer, topic: str) -> LeaveTopic:
+    def leave_topic(cls, topic: str) -> LeaveTopic:
         """Creates a LeaveTopic object."""
-        return LeaveTopic(_type, topic)
+        return LeaveTopic(topic)
 
     @classmethod
     def register(cls, username: str) -> RegisterMessage:
@@ -143,13 +137,13 @@ class CDProto:
         """Sends a message to the broker based on the command type."""
         try:
             if command == Command.JOIN_TOPIC:
-                msg = cls.join_topic(_type, topic)
+                msg = cls.join_topic(topic)
             elif command == Command.PUBLISH:
-                msg = cls.send_message(_type, topic, message)
+                msg = cls.send_message(topic, message)
             elif command == Command.LIST_TOPICS:
-                msg = cls.topic_list(_type, message)
+                msg = cls.topic_list(message)
             elif command == Command.UNSUBSCRIBE:
-                msg = cls.leave_topic(_type, topic)
+                msg = cls.leave_topic(topic)
             else:
                 raise ValueError(f"Unsupported command: {command}")
 
