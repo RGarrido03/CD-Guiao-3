@@ -40,9 +40,9 @@ class TopicList(Message):
 
 
 class TopicListSuccess(Message):
-    def __init__(self, topics: list[str]):
+    def __init__(self, message: list[str]):
         super().__init__(Command.TOPIC_LIST_SUCCESS)
-        self.topics = topics
+        self.message = message
 
 
 class UnsubscribeTopic(Message):
@@ -83,7 +83,7 @@ class CDProto:
         command: Command,
         _type: Serializer = None,
         topic: str = "",
-        message: str = None,
+        message: Union[str, list[str]] = None,
     ) -> None:
         """Sends a message to the broker based on the command type."""
         try:
@@ -107,31 +107,28 @@ class CDProto:
             raise CDProtoBadFormat(f"Error sending message: {e}")
 
     @classmethod
-    def recv_msg(cls, connection: socket) -> Union[Message, None]:
+    def recv_msg(cls, connection: socket) -> tuple[Message, Serializer]:
         """Receives through a connection a Message object."""
         try:
             # Receive the message length header
             h = int.from_bytes(connection.recv(2), "big")
-            if h == 0:
-                return None
-
             serializer = Serializer(int.from_bytes(connection.recv(2), "big"))
 
             message = connection.recv(h - 2)
             dictionary = encoder_map[serializer].decode(message)
             command = Command(dictionary["command"])
-            print("command", command.name)
 
             if command == Command.SUBSCRIBE:
-                return CDProto.subscribe_topic(dictionary["topic"])
+                return CDProto.subscribe_topic(dictionary["topic"]), serializer
             elif command == Command.PUBLISH:
-                return CDProto.publish_message(
-                    dictionary["topic"], dictionary["message"]
+                return (
+                    CDProto.publish_message(dictionary["topic"], dictionary["message"]),
+                    serializer,
                 )
             elif command == Command.TOPIC_LIST:
-                return CDProto.topic_list()
+                return CDProto.topic_list(dictionary["message"]), serializer
             elif command == Command.UNSUBSCRIBE:
-                return CDProto.unsubscribe_topic(dictionary["topic"])
+                return CDProto.unsubscribe_topic(dictionary["topic"]), serializer
             else:
                 raise ValueError(f"Unsupported command: {dictionary['command']}")
         except Exception as e:
