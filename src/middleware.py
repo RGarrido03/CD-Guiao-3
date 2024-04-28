@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import Any, Tuple
 
 from src.consts import MiddlewareType, Serializer, Command
-from src.protocol import CDProto
+from src.protocol import CDProto, PublishMessage
 
 
 class Queue:
@@ -29,12 +29,9 @@ class Queue:
 
     def pull(self) -> Tuple[str, Any]:
         """Receives (topic, data) from broker. Should BLOCK the consumer!"""
-        msg = CDProto.recv_msg(self.sock)
-        if msg.command == "publish":
-            return msg
-        elif msg.command == "listTopics":
-            # invocar callback
-            pass
+        msg, _ = CDProto.recv_msg(self.sock)
+        if isinstance(msg, PublishMessage):
+            return msg.topic, msg.message
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
