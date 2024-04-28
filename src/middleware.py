@@ -21,7 +21,7 @@ class Queue:
         self.sock.connect(("localhost", 5000))
 
         if self.type == MiddlewareType.CONSUMER:
-            CDProto.send_msg(self.sock, Command.JOIN_TOPIC, self.serializer, self.topic)
+            CDProto.send_msg(self.sock, Command.SUBSCRIBE, self.serializer, self.topic)
 
     def push(self, value):
         """Sends data to broker."""
@@ -38,7 +38,7 @@ class Queue:
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
-        CDProto.send_msg(self.sock, Command.LIST_TOPICS, self.serializer, self.topic)
+        CDProto.send_msg(self.sock, Command.TOPIC_LIST, self.serializer, self.topic)
         callback()
 
     def cancel(self):

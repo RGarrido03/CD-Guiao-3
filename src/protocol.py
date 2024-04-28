@@ -1,4 +1,3 @@
-from datetime import datetime
 from enum import Enum
 from socket import socket
 from typing import Union
@@ -22,12 +21,17 @@ class Message:
         return str(self.to_dict())
 
 
-class JoinTopic(Message):
-    """Message to join a chat topic."""
-
+class SubscribeTopic(Message):
     def __init__(self, topic: str):
-        super().__init__(Command.JOIN_TOPIC)
+        super().__init__(Command.SUBSCRIBE)
         self.topic = topic
+
+
+class PublishMessage(Message):
+    def __init__(self, topic: str, message: str):
+        super().__init__(Command.PUBLISH)
+        self.topic = topic
+        self.message = message
 
 
 class TopicList(Message):
@@ -41,62 +45,24 @@ class TopicListSuccess(Message):
         self.topics = topics
 
 
-class SendMessage(Message):
-    """Message to chat with other clients."""
-
-    def __init__(self, topic: str, message: str):
-        super().__init__(Command.SEND_MESSAGE)
-        self.topic = topic
-        self.message = message
-
-
-class LeaveTopic(Message):
+class UnsubscribeTopic(Message):
     def __init__(self, topic: str):
-        super().__init__(Command.LEAVE_TOPIC)
+        super().__init__(Command.UNSUBSCRIBE)
         self.topic = topic
-
-
-class JoinMessage(Message):
-    """Message to join a chat channel."""
-
-    def __init__(self, channel: str):
-        super().__init__(Command.JOIN)
-        self.channel = channel
-
-
-class RegisterMessage(Message):
-    """Message to register username in the server."""
-
-    def __init__(self, username: str):
-        super().__init__(Command.REGISTER)
-        self.username = username
-
-
-class TextMessage(Message):
-    """Message to chat with other clients."""
-
-    def __init__(self, message: str, ts: int, channel: str = None):
-        super().__init__(Command.MESSAGE)
-        self.message = message
-        self.channel = channel
-        self.ts = ts
-
-    def to_dict(self):
-        return {k: v for k, v in self.__dict__.items() if v is not None}
 
 
 class CDProto:
     """Computação Distribuida Protocol."""
 
     @classmethod
-    def join_topic(cls, topic: str) -> JoinTopic:
-        """Creates a JoinTopic object."""
-        return JoinTopic(topic)
+    def subscribe_topic(cls, topic: str) -> SubscribeTopic:
+        """Creates a SubscribeTopic object."""
+        return SubscribeTopic(topic)
 
     @classmethod
-    def send_message(cls, topic: str, message: str) -> SendMessage:
-        """Creates a SendMessage object."""
-        return SendMessage(topic, message)
+    def publish_message(cls, topic: str, message: str) -> PublishMessage:
+        """Creates a PublishMessage object."""
+        return PublishMessage(topic, message)
 
     @classmethod
     def topic_list(cls, _list: list[str] = None) -> Union[TopicList, TopicListSuccess]:
@@ -106,24 +72,9 @@ class CDProto:
         return TopicList()
 
     @classmethod
-    def leave_topic(cls, topic: str) -> LeaveTopic:
-        """Creates a LeaveTopic object."""
-        return LeaveTopic(topic)
-
-    @classmethod
-    def register(cls, username: str) -> RegisterMessage:
-        """Creates a RegisterMessage object."""
-        return RegisterMessage(username)
-
-    @classmethod
-    def join(cls, channel: str) -> JoinMessage:
-        """Creates a JoinMessage object."""
-        return JoinMessage(channel)
-
-    @classmethod
-    def message(cls, message: str, channel: str = None) -> TextMessage:
-        """Creates a TextMessage object."""
-        return TextMessage(message, int(datetime.now().timestamp()), channel)
+    def unsubscribe_topic(cls, topic: str) -> UnsubscribeTopic:
+        """Creates a UnsubscribeTopic object."""
+        return UnsubscribeTopic(topic)
 
     @classmethod
     def send_msg(
@@ -136,14 +87,14 @@ class CDProto:
     ) -> None:
         """Sends a message to the broker based on the command type."""
         try:
-            if command == Command.JOIN_TOPIC:
-                msg = cls.join_topic(topic)
+            if command == Command.SUBSCRIBE:
+                msg = cls.subscribe_topic(topic)
             elif command == Command.PUBLISH:
-                msg = cls.send_message(topic, message)
-            elif command == Command.LIST_TOPICS:
+                msg = cls.publish_message(topic, message)
+            elif command == Command.TOPIC_LIST:
                 msg = cls.topic_list(message)
             elif command == Command.UNSUBSCRIBE:
-                msg = cls.leave_topic(topic)
+                msg = cls.unsubscribe_topic(topic)
             else:
                 raise ValueError(f"Unsupported command: {command}")
 
@@ -171,18 +122,16 @@ class CDProto:
             command = Command(dictionary["command"])
             print("command", command.name)
 
-            if command == Command.REGISTER:
-                user_name = dictionary["user"]
-                return CDProto.register(user_name)
-            elif command == Command.JOIN:
-                channel = dictionary["channel"]
-                return CDProto.join(channel)
-            elif command == Command.MESSAGE:
-                msg = dictionary["message"]
-                channel = dictionary.get("channel")
-                if channel is None:
-                    return CDProto.message(msg)
-                return CDProto.message(msg, channel)
+            if command == Command.SUBSCRIBE:
+                return CDProto.subscribe_topic(dictionary["topic"])
+            elif command == Command.PUBLISH:
+                return CDProto.publish_message(
+                    dictionary["topic"], dictionary["message"]
+                )
+            elif command == Command.TOPIC_LIST:
+                return CDProto.topic_list()
+            elif command == Command.UNSUBSCRIBE:
+                return CDProto.unsubscribe_topic(dictionary["topic"])
             else:
                 raise ValueError(f"Unsupported command: {dictionary['command']}")
         except Exception as e:
