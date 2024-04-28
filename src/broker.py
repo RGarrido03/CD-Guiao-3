@@ -76,9 +76,6 @@ class Broker:
 
         if isinstance(msg, SubscribeTopic):
             self.subscribe(msg.topic, conn, serializer)
-            CDProto.send_msg(
-                conn, Command.PUBLISH, serializer, msg.topic, self.get_topic(msg.topic)
-            )
         elif isinstance(msg, PublishMessage):
             self.put_topic(msg.topic, msg.message)
             for subscriber, _serializer in self.list_subscriptions(msg.topic):
@@ -116,9 +113,12 @@ class Broker:
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
         """Subscribe to topic by client in address."""
         if topic not in self.topics:
-            self.topics[topic] = ([(address, _format)], "")
-            return
+            self.topics[topic] = ([], "")
         self.topics[topic][0].append((address, _format))
+        if self.topics[topic][1] != "":
+            CDProto.send_msg(
+                address, Command.PUBLISH, _format, topic, self.topics[topic][1]
+            )
 
     def unsubscribe(self, topic: str, address: socket.socket):
         """Unsubscribe to topic by client in address."""
