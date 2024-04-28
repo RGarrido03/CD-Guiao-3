@@ -20,9 +20,9 @@ class Broker:
         self._port = 5000
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind((self._host, self._port))
         self.socket.listen(100)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self.sel = selectors.DefaultSelector()
         self.sel.register(self.socket, selectors.EVENT_READ, self.accept)
