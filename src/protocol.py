@@ -1,6 +1,6 @@
 from enum import Enum
 from socket import socket
-from typing import Union
+from typing import Union, Optional
 
 from src.consts import Serializer, Command
 from src.utils import encoder_map
@@ -107,11 +107,15 @@ class CDProto:
             raise CDProtoBadFormat(f"Error sending message: {e}")
 
     @classmethod
-    def recv_msg(cls, connection: socket) -> tuple[Message, Serializer]:
+    def recv_msg(cls, connection: socket) -> Optional[tuple[Message, Serializer]]:
         """Receives through a connection a Message object."""
         try:
             # Receive the message length header
             h = int.from_bytes(connection.recv(2), "big")
+
+            if h == 0:
+                return None
+
             serializer = Serializer(int.from_bytes(connection.recv(2), "big"))
 
             message = connection.recv(h - 2)

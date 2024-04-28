@@ -72,7 +72,15 @@ class Broker:
         self.sel.register(conn, selectors.EVENT_READ, self.read)
 
     def read(self, conn: socket.socket):
-        msg, serializer = CDProto.recv_msg(conn)
+        msg = CDProto.recv_msg(conn)
+
+        if msg is None:
+            [self.unsubscribe(topic, conn) for topic in self.topics]
+            self.sel.unregister(conn)
+            conn.close()
+            return
+
+        msg, serializer = msg
 
         if isinstance(msg, SubscribeTopic):
             self.subscribe(msg.topic, conn, serializer)
