@@ -4,7 +4,14 @@ import selectors
 import socket
 from typing import List, Tuple, Union
 
-from src.consts import Serializer
+from src.consts import Serializer, Command
+from src.protocol import (
+    CDProto,
+    SubscribeTopic,
+    PublishMessage,
+    TopicList,
+    UnsubscribeTopic,
+)
 
 subscriber_type = tuple[socket.socket, Serializer]
 topic_type = tuple[list[subscriber_type], str]
@@ -65,7 +72,25 @@ class Broker:
         self.sel.register(conn, selectors.EVENT_READ, self.read)
 
     def read(self, conn: socket.socket):
-        pass
+        msg, serializer = CDProto.recv_msg(conn)
+
+        if isinstance(msg, SubscribeTopic):
+            self.subscribe(msg.topic, conn, serializer)
+            CDProto.send_msg(
+                conn, Command.PUBLISH, serializer, msg.topic, self.get_topic(msg.topic)
+            )
+        elif isinstance(msg, PublishMessage):
+            self.put_topic(msg.topic, msg.message)
+            for subscriber, _serializer in self.list_subscriptions(msg.topic):
+                CDProto.send_msg(
+                    subscriber, Command.PUBLISH, _serializer, msg.topic, msg.message
+                )
+        elif isinstance(msg, TopicList):
+            CDProto.send_msg(
+                conn, Command.TOPIC_LIST_SUCCESS, serializer, message=self.list_topics()
+            )
+        elif isinstance(msg, UnsubscribeTopic):
+            self.unsubscribe(msg.topic, conn)
 
     def list_topics(self) -> List[str]:
         """Returns a list of strings containing all topics containing values."""
