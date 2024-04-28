@@ -4,7 +4,7 @@ from socket import socket
 from typing import Union
 
 from src.consts import Serializer, Command
-from src.utils import JsonUtils, encoder_map
+from src.utils import encoder_map
 
 
 class Message:
@@ -149,8 +149,9 @@ class CDProto:
 
             msg = encoder_map[_type].encode(msg.to_dict())
 
-            header = (len(msg)).to_bytes(2, byteorder="big")
-            connection.send(header + msg)
+            header = (len(msg) + 2).to_bytes(2, byteorder="big")
+            serializer = _type.value.to_bytes(2, byteorder="big")
+            connection.send(header + serializer + msg)
         except Exception as e:
             raise CDProtoBadFormat(f"Error sending message: {e}")
 
@@ -163,16 +164,20 @@ class CDProto:
             if h == 0:
                 return None
 
-            message = connection.recv(h)
-            dictionary = JsonUtils.decode(message)
+            serializer = Serializer(int.from_bytes(connection.recv(2), "big"))
 
-            if dictionary["command"] == Command.REGISTER:
+            message = connection.recv(h - 2)
+            dictionary = encoder_map[serializer].decode(message)
+            command = Command(dictionary["command"])
+            print("command", command.name)
+
+            if command == Command.REGISTER:
                 user_name = dictionary["user"]
                 return CDProto.register(user_name)
-            elif dictionary["command"] == Command.JOIN:
+            elif command == Command.JOIN:
                 channel = dictionary["channel"]
                 return CDProto.join(channel)
-            elif dictionary["command"] == Command.MESSAGE:
+            elif command == Command.MESSAGE:
                 msg = dictionary["message"]
                 channel = dictionary.get("channel")
                 if channel is None:
