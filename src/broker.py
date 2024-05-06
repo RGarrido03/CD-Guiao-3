@@ -34,6 +34,14 @@ class Broker:
         self.sel = selectors.DefaultSelector()
         self.sel.register(self.socket, selectors.EVENT_READ, self.accept)
 
+        """ publish com id = "root/node_id/leaf_id" 
+        nome já diz o percurso
+        ir nó a nó a ver quem está subscrito e enviar a mensagem
+        podemos ter o parentId para fazer a search
+        lista de subscribers (?)
+        split last para ver o ultimo, ver quem esta subcrito e enviar, cortar, passar para o próximo, etc até ser vazio
+        """
+
         """
         {
           "hello": (
@@ -44,6 +52,7 @@ class Broker:
             ],
             "abcd"
           )
+          
         }
         
         JSON equivalent:
@@ -84,12 +93,18 @@ class Broker:
 
         if isinstance(msg, SubscribeTopic):
             self.subscribe(msg.topic, conn, serializer)
+            print("1:", msg.topic, serializer)
         elif isinstance(msg, PublishMessage):
             self.put_topic(msg.topic, msg.message)
-            for subscriber, _serializer in self.list_subscriptions(msg.topic):
-                CDProto.send_msg(
-                    subscriber, Command.PUBLISH, _serializer, msg.topic, msg.message
-                )
+            print("2:", msg.topic)
+            topic = msg.topic.split("/")
+            while topic:
+                msg.topic = "/".join(topic)
+                for subscriber, _serializer in self.list_subscriptions(msg.topic):
+                    CDProto.send_msg(
+                        subscriber, Command.PUBLISH, _serializer, msg.topic, msg.message
+                    )
+                topic.pop()
         elif isinstance(msg, TopicList):
             CDProto.send_msg(
                 conn, Command.TOPIC_LIST_SUCCESS, serializer, message=self.list_topics()
@@ -116,6 +131,8 @@ class Broker:
 
     def list_subscriptions(self, topic: str) -> List[Tuple[socket.socket, Serializer]]:
         """Provide list of subscribers to a given topic."""
+        if topic not in self.topics:
+            return []
         return self.topics[topic][0]
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
