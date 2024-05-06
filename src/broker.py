@@ -97,7 +97,7 @@ class Broker:
         elif isinstance(msg, PublishMessage):
             self.put_topic(msg.topic, msg.message)
             print("2:", msg.topic)
-            topic = msg.topic.strip("/").split("/")
+            topic = msg.topic.split("/")
             while topic:
                 msg.topic = "/".join(topic)
                 for subscriber, _serializer in self.list_subscriptions(msg.topic):
